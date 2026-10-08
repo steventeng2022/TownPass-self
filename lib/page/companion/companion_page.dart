@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'comfort_tools.dart';
 import 'facility.dart';
 import 'facility_repository.dart';
 import 'location_service.dart';
@@ -386,6 +387,23 @@ class _CompanionPageState extends State<CompanionPage> {
                                           ),
                                     ),
                                     const SizedBox(height: 8),
+                                    OutlinedButton.icon(
+                                      icon: const Icon(Icons.favorite_outline),
+                                      label: const Text('安心生活工具'),
+                                      onPressed: () =>
+                                          Navigator.of(context).push(
+                                            PageRouteBuilder<void>(
+                                              transitionDuration: Duration.zero,
+                                              reverseTransitionDuration:
+                                                  Duration.zero,
+                                              pageBuilder: (context, a, b) =>
+                                                  ComfortTools(
+                                                    repository: r,
+                                                    openDetails: details,
+                                                  ),
+                                            ),
+                                          ),
+                                    ),
                                     const Text('賽前準備原型・公共廁所需求查詢'),
                                     const Text('公開資料非即時；未知不等於沒有，設施不等於可通行路線。'),
                                     const SizedBox(height: 12),

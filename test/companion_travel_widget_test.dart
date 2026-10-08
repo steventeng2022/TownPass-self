@@ -32,6 +32,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
+      await tester.ensureVisible(find.text(name));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(name));
       await tester.pumpAndSettle();
       expect(find.textContaining('不保證路線無障礙'), findsOneWidget);
