@@ -30,6 +30,16 @@ jobs:
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter test
       - run: flutter analyze lib/page/companion lib/companion_demo.dart test
+      - name: Accept Android SDK licenses and install required tools
+        shell: bash
+        run: |
+          # sdkmanager exits normally after all prompts; ignore yes's SIGPIPE.
+          set +o pipefail
+          yes | sdkmanager --licenses
+          license_status=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$license_status" -eq 0
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.13113456"
       - name: Build full TownPass Android app
         run: flutter build apk --debug -t lib/main.dart
       - name: Build companion website
