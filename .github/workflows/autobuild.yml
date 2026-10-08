@@ -1,0 +1,123 @@
+name: Build downloadable apps
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autobuild-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-and-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter test
+      - run: flutter analyze lib/page/companion lib/companion_demo.dart test
+      - name: Build full TownPass Android app
+        run: flutter build apk --debug -t lib/main.dart
+      - name: Build companion website
+        run: flutter build web --release -t lib/companion_demo.dart --no-web-resources-cdn
+      - name: Package downloads
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-debug.apk dist/townpass-android.apk
+          (cd build/web && zip -r ../../dist/townpass-web.zip .)
+          (cd dist && sha256sum townpass-android.apk townpass-web.zip > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-and-website
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+      IOS_EXPORT_OPTIONS_BASE64: ${{ secrets.IOS_EXPORT_OPTIONS_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - name: Check Apple signing configuration
+        id: signing
+        shell: bash
+        run: |
+          if [[ -n "$IOS_CERTIFICATE_BASE64" && -n "$IOS_CERTIFICATE_PASSWORD" && -n "$IOS_PROVISION_PROFILE_BASE64" && -n "$IOS_EXPORT_OPTIONS_BASE64" ]]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::Apple signing secrets missing. Only an unsigned iOS build check will run; no installable IPA will be produced.'
+          fi
+      - name: Build check without signing
+        if: steps.signing.outputs.available != 'true'
+        run: flutter build ios --release --no-codesign -t lib/main.dart
+      - name: Install signing certificate and provisioning profile
+        if: steps.signing.outputs.available == 'true'
+        shell: bash
+        run: |
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          printf '%s' "$IOS_CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          printf '%s' "$IOS_PROVISION_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          printf '%s' "$IOS_EXPORT_OPTIONS_BASE64" | base64 --decode > "$RUNNER_TEMP/ExportOptions.plist"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/build.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/build.keychain-db"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/build.keychain-db"
+          security import "$RUNNER_TEMP/signing.p12" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$RUNNER_TEMP/build.keychain-db"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/build.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/build.keychain-db" login.keychain-db
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/townpass.mobileprovision"
+      - name: Build signed IPA
+        if: steps.signing.outputs.available == 'true'
+        run: flutter build ipa --release -t lib/main.dart --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+      - name: Package IPA
+        if: steps.signing.outputs.available == 'true'
+        shell: bash
+        run: |
+          mkdir -p dist
+          shopt -s nullglob
+          ipas=(build/ios/ipa/*.ipa)
+          test "${#ipas[@]}" -eq 1
+          cp "${ipas[0]}" dist/townpass-ios.ipa
+          (cd dist && shasum -a 256 townpass-ios.ipa > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.available == 'true'
+        with:
+          name: ios-ipa
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove signing material
+        if: always()
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" || true
+          rm -f "$RUNNER_TEMP/signing.p12" "$RUNNER_TEMP/profile.mobileprovision" "$RUNNER_TEMP/ExportOptions.plist"
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/townpass.mobileprovision"
