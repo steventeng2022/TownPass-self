@@ -54,8 +54,14 @@ jobs:
           (cd dist && sha256sum townpass-android.apk townpass-web.zip > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
-          name: android-and-website
-          path: dist/
+          name: android-apk
+          path: dist/townpass-android.apk
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-zip
+          path: dist/townpass-web.zip
           if-no-files-found: error
           retention-days: 30
 
@@ -84,7 +90,7 @@ jobs:
             echo 'available=true' >> "$GITHUB_OUTPUT"
           else
             echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo '::warning::Apple signing secrets missing. Only an unsigned iOS build check will run; no installable IPA will be produced.'
+            echo '::warning::Apple signing secrets missing. An unsigned IPA will be packaged for external signing; it is not directly installable.'
           fi
       - name: Build check without signing
         if: steps.signing.outputs.available != 'true'
@@ -119,11 +125,19 @@ jobs:
           test "${#ipas[@]}" -eq 1
           cp "${ipas[0]}" dist/townpass-ios.ipa
           (cd dist && shasum -a 256 townpass-ios.ipa > SHA256SUMS.txt)
+      - name: Package unsigned IPA for external signing
+        if: steps.signing.outputs.available != 'true'
+        shell: bash
+        run: |
+          mkdir -p dist "$RUNNER_TEMP/unsigned-ipa/Payload"
+          test -d build/ios/iphoneos/Runner.app
+          cp -R build/ios/iphoneos/Runner.app "$RUNNER_TEMP/unsigned-ipa/Payload/"
+          (cd "$RUNNER_TEMP/unsigned-ipa" && zip -r "$GITHUB_WORKSPACE/dist/townpass-ios-unsigned.ipa" Payload)
+          echo 'Unsigned IPA: must be signed and provisioned before installation on an iPhone.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: steps.signing.outputs.available == 'true'
         with:
           name: ios-ipa
-          path: dist/
+          path: dist/*.ipa
           if-no-files-found: error
           retention-days: 30
       - name: Remove signing material
