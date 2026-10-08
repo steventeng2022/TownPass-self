@@ -1,5 +1,5 @@
 import 'package:town_pass/bean/activity.dart';
-import 'package:town_pass/gen/fonts.gen.dart';
+// 使用作業系統字體，避免打包授權未明字體。
 import 'package:town_pass/util/tp_app_bar.dart';
 import 'package:town_pass/util/tp_cached_network_image.dart';
 import 'package:town_pass/util/tp_colors.dart';

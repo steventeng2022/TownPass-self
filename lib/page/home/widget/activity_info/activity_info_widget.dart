@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:town_pass/gen/assets.gen.dart';
-import 'package:town_pass/gen/fonts.gen.dart';
+// 使用作業系統字體，避免打包授權未明字體。
 import 'package:town_pass/page/home/widget/activity_info/activity_banner_widget.dart';
 import 'package:town_pass/page/home/widget/activity_info/activity_banner_widget_controller.dart';
 import 'package:town_pass/util/tp_colors.dart';
@@ -24,7 +24,7 @@ class ActivityInfoWidget extends StatelessWidget {
                 style: TextStyle(
                   color: TPColors.grayscale800,
                   fontSize: 20,
-                  fontFamily: FontFamily.pingFangTC,
+                  fontFamily: null,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -43,7 +43,7 @@ class ActivityInfoWidget extends StatelessWidget {
                       style: TextStyle(
                         color: TPColors.grayscale800,
                         fontSize: 16,
-                        fontFamily: FontFamily.pingFangTC,
+                        fontFamily: null,
                         fontWeight: FontWeight.w400,
                       ),
                     ),

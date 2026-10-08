@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:town_pass/gen/assets.gen.dart';
-import 'package:town_pass/gen/fonts.gen.dart';
+// 使用作業系統字體，避免打包授權未明字體。
 import 'package:town_pass/util/tp_colors.dart';
 import 'package:town_pass/util/tp_text.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -83,7 +83,7 @@ class _Button extends StatelessWidget {
               style: const TextStyle(
                 color: TPColors.grayscale800,
                 fontSize: 16,
-                fontFamily: FontFamily.pingFangTC,
+                fontFamily: null,
                 fontWeight: FontWeight.w600,
               ),
             ),

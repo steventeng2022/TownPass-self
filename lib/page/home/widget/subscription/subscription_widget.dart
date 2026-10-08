@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:town_pass/bean/subscription.dart';
 import 'package:town_pass/gen/assets.gen.dart';
-import 'package:town_pass/gen/fonts.gen.dart';
+// 使用作業系統字體，避免打包授權未明字體。
 import 'package:town_pass/page/home/widget/subscription/subscription_item_widget.dart';
 import 'package:town_pass/service/subscription_service.dart';
 import 'package:town_pass/util/tp_colors.dart';
@@ -32,7 +32,7 @@ class SubscriptionWidget extends StatelessWidget {
                   style: TextStyle(
                     color: TPColors.grayscale800,
                     fontSize: 20,
-                    fontFamily: FontFamily.pingFangTC,
+                    fontFamily: null,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -109,7 +109,7 @@ class SubscriptionWidget extends StatelessWidget {
                           style: TextStyle(
                             color: TPColors.grayscale800,
                             fontSize: 16,
-                            fontFamily: FontFamily.pingFangTC,
+                            fontFamily: null,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -118,7 +118,7 @@ class SubscriptionWidget extends StatelessWidget {
                           style: const TextStyle(
                             color: TPColors.primary500,
                             fontSize: 16,
-                            fontFamily: FontFamily.pingFangTC,
+                            fontFamily: null,
                             fontWeight: FontWeight.w400,
                             decoration: TextDecoration.underline,
                             decorationColor: TPColors.primary500,

@@ -43,6 +43,7 @@ dependencies:
   flutter_svg: ^2.3.0
   fluttertoast: ^10.0.2
   get: ^4.7.3
+  http: ^1.6.0
   geolocator: ^14.1.1
   intl: ^0.20.3
   image_picker: ^1.2.4
@@ -92,6 +93,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/mock_data/
+    - assets/open_data/
     - assets/image/
     - assets/svg/
 
@@ -121,20 +123,10 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
   fonts:
-    - family: PingFangTC
+    - family: NotoSansTC
       fonts:
-        - asset: fonts/PingFangTC-Thin.otf
-          weight: 100
-        - asset: fonts/PingFangTC-Ultralight.otf
-          weight: 200
-        - asset: fonts/PingFangTC-Light.otf
-          weight: 300
-        - asset: fonts/PingFangTC-Regular.otf
-          weight: 400
-        - asset: fonts/PingFangTC-Medium.otf
-          weight: 500
-        - asset: fonts/PingFangTC-Semibold.otf
-          weight: 600
+        - asset: assets/fonts/NotoSansCJKtc-Regular.otf
+  # SIL OFL 1.1；授權全文 assets/fonts/OFL.txt。
 
 flutter_native_splash:
   color: "#FFFFFF"

@@ -1,4 +1,3 @@
-import 'package:town_pass/gen/fonts.gen.dart';
 import 'package:flutter/material.dart';
 
 /// An immutable style describing how to format and paint text within Pass App
@@ -18,7 +17,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h1Regular = TPTextStyles(
     fontSize: 36.0,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w400,
   );
 
@@ -30,7 +29,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h1SemiBold = TPTextStyles(
     fontSize: 36,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 
@@ -42,7 +41,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h2Regular = TPTextStyles(
     fontSize: 24,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w400,
   );
 
@@ -54,7 +53,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h2SemiBold = TPTextStyles(
     fontSize: 24,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 
@@ -66,7 +65,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h3Regular = TPTextStyles(
     fontSize: 16,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w400,
   );
 
@@ -78,7 +77,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles h3SemiBold = TPTextStyles(
     fontSize: 16,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 
@@ -90,7 +89,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles bodyRegular = TPTextStyles(
     fontSize: 14,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w400,
   );
 
@@ -102,7 +101,7 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles bodySemiBold = TPTextStyles(
     fontSize: 14,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 
@@ -114,13 +113,13 @@ final class TPTextStyles extends TextStyle {
   /// Usage:
   static const TPTextStyles caption = TPTextStyles(
     fontSize: 12,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 
   static const TPTextStyles titleSemiBold = TPTextStyles(
     fontSize: 18,
-    fontFamily: FontFamily.pingFangTC,
+    fontFamily: null,
     fontWeight: FontWeight.w600,
   );
 }

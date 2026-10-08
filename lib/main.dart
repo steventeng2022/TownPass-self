@@ -48,6 +48,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Town Pass',
       theme: ThemeData(
+        fontFamily: 'NotoSansTC',
         useMaterial3: true,
         scaffoldBackgroundColor: TPColors.grayscale50,
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(

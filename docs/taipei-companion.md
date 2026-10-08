@@ -1,0 +1,62 @@
+# 台北安心行 — 賽前準備原型
+
+這是 TownPass 微服務功能的準備原型，並非已公布正式賽題的完成作品。正式題目公告後需重新核對：https://codefest.taipei/2026-fall/rules 。
+
+## 已實作
+
+首頁「台北安心行」入口、GetX `/taipei-companion` 路由（保留原 IndexedStack）、公廁名称／地址搜尋、行政區、無障礙廁座數大於零、親子廁座數大於零、照護床位置有登載等需求交集篩選。詳細頁保留來源資訊、未知開放時間與即時狀態，支援複製地址及持久收藏。快照／快取可離線查詢；主動更新失敗不抹除既有資料，顯示重試訊息。
+
+不提供可通行路線、即時設施狀態或距離排名，亦不使用定位、地圖商業服務或任何 LLM。設施登載不能保證現場可用或路線無障礙。
+
+## 真實資料與歸屬
+
+- 臺北市政府環境保護局「臺北市公廁點位資訊」。
+- 官方資料頁：https://data.taipei/dataset/detail?id=ca205b54-a06f-4d84-894c-d6ab5079ce79
+- 原始 CSV：https://data.taipei/api/frontstage/tpeod/dataset/resource.download?rid=9e0e6ad4-b9f9-4810-8551-0cffd1b915b3
+- 國家資料集授權：https://data.gov.tw/dataset/138798
+- 政府資料開放授權條款第1版：https://data.gov.tw/license
+- 來源資源更新：2026-08-24。實際取得的 UTF-8 BOM CSV 原樣存於 `assets/open_data/taipei_toilets.csv`，1537列、12行政區。
+- SHA-256：`5604abaca0ff40748e19b25964f0b7fd6f54b846681560b1c86b43dd60a129cc`。
+
+資料屬公開免費開放資料。依法提供來源標示；資料非即時。CSV 空白、不合法或負值座數保持未知，零代表來源登載零座。照護床篩選僅為欄位有登載，不解讀成可使用保證。資料下載時間與來源發布時間分開，更新後仍保守顯示原快照來源日期基準，不假裝新下載即是來源剛更新。超過30日提示確認。
+
+所有虛構名稱僅存在 `test/`、標記「僅供測試」，不打包、不用於執行時降級。損毀快取回退真實快照，連快照無法讀取則明確報錯。
+
+## 授權與合規邊界
+
+保留上游 `LICENSE` GPLv3 與所有既有通知；未擅自宣稱能重新授權上游。新增 `lib/page/companion/`、`lib/companion_demo.dart` 與新增測試／文件採 **AGPL-3.0-or-later**，全文見 `LICENSE-AGPL-3.0.txt`。結合 GPLv3/AGPLv3 的作品須依相關條款提供對應完整原始碼；正式提交前須由主辦確認合併作品之授權形式。這不是法律意見。
+
+只新增直接宣告現有傳遞套件 `http`（BSD）；沿用 Flutter（BSD）、shared_preferences（BSD）、url_launcher（BSD）。功能沒有付費、雲端模型或商業服務依賴。上游原有功能與素材仍需整體第三方授權盤點，不能把這個原型當作已完成全專案合規審核。
+
+移除 PingFangTC 打包與程式依賴，改採可合法散布的 Noto Sans CJK TC（SIL OFL 1.1），字體與授權全文位於 `assets/fonts/`。來源：https://github.com/notofonts/noto-cjk/tree/main/Sans 。網頁字體隨 app 打包，避免中文字體回退時需要 fonts.gstatic.com。上游 `fonts/` 檔案保持原樣，但不進 app bundle；若交付完整原始碼含既有素材，仍需確認其散布許可或取得維護者同意移除。
+
+## 建置與實機展示（不用投影片）
+
+依 `.fvmrc` 使用官方 Flutter 3.47.6 / Dart 3.13.5：
+
+```sh
+flutter pub get
+flutter pub run build_runner build
+flutter test
+flutter analyze lib/page/companion lib/companion_demo.dart test
+flutter run -t lib/companion_demo.dart -d chrome
+flutter build web -t lib/companion_demo.dart --no-web-resources-cdn
+# Android SDK、Java 與接受 SDK 授權完成後：
+flutter build apk --debug
+```
+
+完整 TownPass Android 入口為 `lib/main.dart`；網頁使用隔離入口 `lib/companion_demo.dart`，避開上游原生通知／定位等啟動服務。網頁更新可能遇到來源站 CORS，仍可讀內建真實快照及收藏。應以 localhost 靜態伺服器開啟 `build/web`，不要用 file://。首次載入 app shell 與 CanvasKit 必須可取得；內建資料／收藏離線不代表首次連開 app 網頁都可離線。
+
+展示步驟：
+1. 開啟首頁入口（Android）或網頁隔離展示入口，顯示1537地點及舊資料提醒。
+2. 選行政區，開啟無障礙需求，再搭配親子需求，展示交集與無結果。
+3. 搜尋真實名稱，開啟詳細，說明座數、未知狀態、官方歸屬與網址。
+4. 收藏、返回、只看收藏；重新開啟確認持久儲存。
+5. 斷網後按更新，保留快照／快取並顯示更新失敗；恢复網路後重試。
+6. 放大系統字體至200%，核對篩選與詳細內容仍可捲動。
+
+## 本機實際驗證與限制
+
+官方 SDK 已下載、執行版本確認並完成 pub get／build_runner。測試覆蓋真實 CSV1537列12區、未知值、交集、錯誤回應、快取損毀、離線、收藏持久化、詳細歸屬與200%文字。新增功能分析無問題。完整專案分析另有上游警告／提示，不應說成全專案零警告。
+
+本機沒有 Android SDK，實際 APK 嘗試回報 `No Android SDK found`，因此未產出 APK；已產出可執行網頁 build。實體手機、螢幕閱讀器及完整 TownPass 啟動仍需後續驗收。收藏以名称／地址／區域組合識別，來源改名可能需重新收藏；本機儲存由作業系統／瀏覽器管理，沒有帳號同步或雲端上傳。

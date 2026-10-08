@@ -19,10 +19,7 @@ class HomeView extends StatelessWidget {
         showLogo: true,
         title: '首頁',
         leading: IconButton(
-          icon: Semantics(
-            label: '帳戶',
-            child: Assets.svg.iconPerson.svg(),
-          ),
+          icon: Semantics(label: '帳戶', child: Assets.svg.iconPerson.svg()),
           onPressed: () => Get.toNamed(TPRoute.account),
         ),
         backgroundColor: TPColors.white,
@@ -30,6 +27,7 @@ class HomeView extends StatelessWidget {
       body: const CustomScrollView(
         slivers: [
           _SliverGap(20),
+          SliverToBoxAdapter(child: _CompanionEntry()),
           SliverToBoxAdapter(child: NewsBannerWidget()),
           _SliverGap(20),
           SliverToBoxAdapter(child: ActivityInfoWidget()),
@@ -42,6 +40,21 @@ class HomeView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CompanionEntry extends StatelessWidget {
+  const _CompanionEntry();
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+    child: ListTile(
+      leading: const Icon(Icons.accessible_forward),
+      title: const Text('台北安心行'),
+      subtitle: const Text('公共廁所・無障礙與親子需求查詢'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Get.toNamed(TPRoute.companion),
+    ),
+  );
 }
 
 class _SliverGap extends StatelessWidget {
