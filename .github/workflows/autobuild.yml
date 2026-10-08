@@ -34,12 +34,14 @@ jobs:
         shell: bash
         run: |
           # sdkmanager exits normally after all prompts; ignore yes's SIGPIPE.
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
           set +o pipefail
-          yes | sdkmanager --licenses
+          yes | "$SDKMANAGER" --licenses
           license_status=${PIPESTATUS[1]}
           set -o pipefail
           test "$license_status" -eq 0
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.13113456"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.13113456"
       - name: Build full TownPass Android app
         run: flutter build apk --debug -t lib/main.dart
       - name: Build companion website
