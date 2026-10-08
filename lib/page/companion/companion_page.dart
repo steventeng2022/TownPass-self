@@ -94,7 +94,14 @@ class _CompanionPageState extends State<CompanionPage> {
       MaterialPageRoute<void>(
         builder: (context) => StatefulBuilder(
           builder: (context, update) => Scaffold(
-            appBar: AppBar(title: const Text('地點詳細資料')),
+            appBar: AppBar(
+              leading: IconButton(
+                tooltip: '返回',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: const Text('地點詳細資料'),
+            ),
             body: ListView(
               padding: const EdgeInsets.all(20),
               children: [
@@ -153,7 +160,16 @@ class _CompanionPageState extends State<CompanionPage> {
   Widget build(BuildContext context) {
     final r = repo;
     return Scaffold(
-      appBar: AppBar(title: const Text('台北安心行')),
+      appBar: AppBar(
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                tooltip: '返回',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
+        title: const Text('台北安心行'),
+      ),
       body: r == null
           ? Center(
               child: error == null
