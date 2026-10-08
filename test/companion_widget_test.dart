@@ -80,6 +80,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('台北安心行'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('無障礙廁所'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -180));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('無障礙廁所'));
     await tester.pumpAndSettle();
     expect(find.text('僅供測試乙'), findsNothing);
@@ -90,8 +97,18 @@ void main() {
     );
     await tester.tap(find.text('僅供測試甲'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('臺北市政府環境保護局'), findsOneWidget);
     expect(find.textContaining('開放時間：未知'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('臺北市政府環境保護局'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.textContaining('臺北市政府環境保護局'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('收藏地點'),
+      -300,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('收藏地點'));
     await tester.pumpAndSettle();
     expect(repo.saved.length, 1);

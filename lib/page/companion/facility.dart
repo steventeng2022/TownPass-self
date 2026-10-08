@@ -1,5 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+typedef Coordinates = ({double latitude, double longitude});
+
 class Facility {
+  Coordinates? get coordinates {
+    final lat = double.tryParse(value('緯度'));
+    final lon = double.tryParse(value('經度'));
+    if (lat == null ||
+        lon == null ||
+        !lat.isFinite ||
+        !lon.isFinite ||
+        lat.abs() > 90 ||
+        lon.abs() > 180) {
+      return null;
+    }
+    return (latitude: lat, longitude: lon);
+  }
+
   Facility(this.fields);
   final Map<String, String> fields;
   String value(String key) => fields[key]?.trim() ?? '';

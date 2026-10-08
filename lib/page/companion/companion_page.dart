@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'facility.dart';
 import 'facility_repository.dart';
+import 'location_service.dart';
 
 class CompanionPage extends StatefulWidget {
-  const CompanionPage({super.key, this.repository});
+  const CompanionPage({super.key, this.repository, this.locate, this.openMaps});
+  final Future<bool> Function(Uri)? openMaps;
+  final Future<Coordinates> Function()? locate;
   final FacilityRepository? repository;
   @override
   State<CompanionPage> createState() => _CompanionPageState();
@@ -23,6 +27,78 @@ class _CompanionPageState extends State<CompanionPage> {
       savedOnly = false,
       busy = false;
   String? error;
+  Coordinates? position;
+  bool locating = false;
+  String? locationMessage;
+
+  Future<void> nearby() async {
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('使用目前位置？'),
+        content: const Text(
+          '僅取得一次位置，用於本機直線距離排序；不會背景追蹤、不儲存位置。外部地圖由您另行開啟，適用其服務條款。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('同意並取得位置'),
+          ),
+        ],
+      ),
+    );
+    if (consent != true || !mounted) return;
+    setState(() {
+      locating = true;
+      locationMessage = null;
+    });
+    try {
+      final value = await (widget.locate ?? CompanionLocation.device().read)();
+      if (!mounted) return;
+      setState(() {
+        position = value;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          locationMessage =
+              '${e is LocationFailure ? e.message : '無法取得位置'}；保留既有結果';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          locating = false;
+        });
+      }
+    }
+  }
+
+  double? distance(Facility f) {
+    final target = f.coordinates;
+    final origin = position;
+    if (target == null || origin == null) return null;
+    return Geolocator.distanceBetween(
+      origin.latitude,
+      origin.longitude,
+      target.latitude,
+      target.longitude,
+    );
+  }
+
+  String distanceLabel(Facility f) {
+    if (f.coordinates == null) return '缺少有效座標，無法計算距離';
+    final meters = distance(f);
+    if (meters == null) return '尚未使用位置';
+    return meters < 1000
+        ? '直線距離約 ${meters.round()} 公尺'
+        : '直線距離約 ${(meters / 1000).toStringAsFixed(1)} 公里';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +165,28 @@ class _CompanionPageState extends State<CompanionPage> {
     }
   }
 
+  Future<void> directions(BuildContext context, Facility f) async {
+    final c = f.coordinates;
+    final uri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': c == null
+          ? '臺北市 ${f.district} ${f.address} ${f.name}'
+          : '${c.latitude},${c.longitude}',
+      'travelmode': 'walking',
+    });
+    try {
+      if (await (widget.openMaps ??
+          ((uri) =>
+              launchUrl(uri, mode: LaunchMode.externalApplication)))(uri)) {
+        return;
+      }
+    } catch (_) {}
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('無法開啟外部地圖，請複製地址後自行查詢')));
+    }
+  }
+
   void details(Facility f) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -137,6 +235,18 @@ class _CompanionPageState extends State<CompanionPage> {
                           .showSnackBar(const SnackBar(content: Text('地址已複製')));
                     }
                   },
+                ),
+                Text(distanceLabel(f)),
+                Text(
+                  f.coordinates == null
+                      ? '缺少有效座標，將以名稱／地址交由外部地圖查詢，定位可能不準確。'
+                      : '路線交由外部 Google 地圖提供；不傳送本機取得的位置。',
+                ),
+                const Text('需網路；開啟後適用外部服務條款。不保證路線無障礙或設施可用，請自行確認目的地與沿途狀況。'),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.directions),
+                  label: const Text('開啟外部地圖路線'),
+                  onPressed: () => directions(context, f),
                 ),
                 const Divider(),
                 const Text(
@@ -214,6 +324,25 @@ class _CompanionPageState extends State<CompanionPage> {
                                 icon: const Icon(Icons.refresh),
                                 label: Text(busy ? '正在更新…' : '更新公開資料'),
                               ),
+                              TextButton.icon(
+                                onPressed: locating ? null : nearby,
+                                icon: const Icon(Icons.my_location),
+                                label: Text(locating ? '正在取得位置…' : '依目前位置排序'),
+                              ),
+                              if (position != null) ...[
+                                const Text(
+                                  '依單次位置的直線距離排序；不是步行距離或無障礙路線。缺少有效座標的地點列於最後。',
+                                ),
+                                TextButton(
+                                  onPressed: () => setState(() {
+                                    position = null;
+                                    locationMessage = null;
+                                  }),
+                                  child: const Text('停止使用位置'),
+                                ),
+                              ],
+                              if (locationMessage != null)
+                                Text(locationMessage!),
                               TextField(
                                 decoration: const InputDecoration(
                                   labelText: '搜尋名稱、地址或行政區',
@@ -316,6 +445,15 @@ class _CompanionPageState extends State<CompanionPage> {
               (!savedOnly || r.saved.contains(f.id)),
         )
         .toList();
+    if (position != null) {
+      final order = {for (var i = 0; i < matches.length; i++) matches[i]: i};
+      matches.sort((a, b) {
+        final comparison = (distance(a) ?? double.infinity).compareTo(
+          distance(b) ?? double.infinity,
+        );
+        return comparison == 0 ? order[a]!.compareTo(order[b]!) : comparison;
+      });
+    }
     return [
       SliverToBoxAdapter(
         child: Padding(
@@ -339,7 +477,7 @@ class _CompanionPageState extends State<CompanionPage> {
             child: ListTile(
               title: Text(f.name),
               subtitle: Text(
-                '${f.district}・${f.address}\n無障礙：${f.accessibleSeats ?? '未知'}座・親子：${f.familySeats ?? '未知'}座',
+                '${f.district}・${f.address}\n無障礙：${f.accessibleSeats ?? '未知'}座・親子：${f.familySeats ?? '未知'}座\n${distanceLabel(f)}',
               ),
               isThreeLine: false,
               onTap: () => details(f),
