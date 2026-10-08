@@ -1,3 +1,7 @@
+# 台北安心行（賽前準備原型）
+
+新增繁體中文公共廁所需求查詢、真實公開資料快照、收藏與離線提示。功能與授權、展示步驟、實際建置限制見 [台北安心行文件](docs/taipei-companion.md)。網頁展示：`flutter run -t lib/companion_demo.dart -d chrome`。
+
 # What is Town Pass?
 
 Town Pass is an open-source project developed by the Taipei City Government. With the growth of smart cities, the demand for digitalization in city management and citizen services continues to rise. As we enter a new digital era, our goal is to involve citizens in the process, combining third-party expertise and innovation to make digital life in Taipei more convenient.
