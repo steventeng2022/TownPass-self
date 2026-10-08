@@ -85,7 +85,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -180));
+    await tester.ensureVisible(find.text('無障礙廁所'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('無障礙廁所'));
     await tester.pumpAndSettle();

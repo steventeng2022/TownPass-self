@@ -20,7 +20,15 @@ class CompanionPage extends StatefulWidget {
 
 class _CompanionPageState extends State<CompanionPage> {
   FacilityRepository? repo;
+  final searchController = TextEditingController();
   String query = '', district = '';
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   bool accessible = false,
       family = false,
       care = false,
@@ -30,11 +38,16 @@ class _CompanionPageState extends State<CompanionPage> {
   Coordinates? position;
   bool locating = false;
   String? locationMessage;
+  bool showSource = false;
+  final Map<Facility, double?> distances = {};
+  Coordinates? distanceOrigin;
+  List<Facility>? distanceFacilities;
 
   Future<void> nearby() async {
     final consent = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: const Text('使用目前位置？'),
         content: const Text(
           '僅取得一次位置，用於本機直線距離排序；不會背景追蹤、不儲存位置。外部地圖由您另行開啟，適用其服務條款。',
@@ -82,11 +95,14 @@ class _CompanionPageState extends State<CompanionPage> {
     final target = f.coordinates;
     final origin = position;
     if (target == null || origin == null) return null;
-    return Geolocator.distanceBetween(
-      origin.latitude,
-      origin.longitude,
-      target.latitude,
-      target.longitude,
+    return distances.putIfAbsent(
+      f,
+      () => Geolocator.distanceBetween(
+        origin.latitude,
+        origin.longitude,
+        target.latitude,
+        target.longitude,
+      ),
     );
   }
 
@@ -106,6 +122,7 @@ class _CompanionPageState extends State<CompanionPage> {
   }
 
   Future<void> load() async {
+    setState(() => error = null);
     try {
       final r =
           widget.repository ??
@@ -189,8 +206,22 @@ class _CompanionPageState extends State<CompanionPage> {
 
   void details(Facility f) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => StatefulBuilder(
+      PageRouteBuilder<void>(
+        transitionDuration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 200),
+        reverseTransitionDuration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 160),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+            FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: child,
+            ),
+        pageBuilder: (context, animation, secondaryAnimation) => StatefulBuilder(
           builder: (context, update) => Scaffold(
             appBar: AppBar(
               leading: IconButton(
@@ -269,165 +300,265 @@ class _CompanionPageState extends State<CompanionPage> {
   @override
   Widget build(BuildContext context) {
     final r = repo;
-    return Scaffold(
-      appBar: AppBar(
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                tooltip: '返回',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              )
-            : null,
-        title: const Text('台北安心行'),
+    if (distanceOrigin != position ||
+        !identical(distanceFacilities, r?.facilities)) {
+      distances.clear();
+      distanceOrigin = position;
+      distanceFacilities = r?.facilities;
+    }
+    return Theme(
+      data: Theme.of(context).copyWith(
+        scaffoldBackgroundColor: const Color(0xfff4f7f5),
+        materialTapTargetSize: MaterialTapTargetSize.padded,
+        visualDensity: VisualDensity.standard,
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        chipTheme: Theme.of(context).chipTheme.copyWith(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+        ),
       ),
-      body: r == null
-          ? Center(
-              child: error == null
-                  ? const CircularProgressIndicator(semanticsLabel: '正在載入公開資料')
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(error!),
-                        TextButton(onPressed: load, child: const Text('重試')),
-                      ],
-                    ),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '賽前準備原型・公共廁所需求查詢',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text('公開資料非即時；未知不等於沒有，設施不等於可通行路線。'),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${r.origin}・${r.facilities.length} 個地點\n來源更新基準：2026-08-24${r.stale ? '・超過30日，請確認' : ''}\n最近成功下載：${r.checkedAt?.toLocal().toString().split('.').first ?? '尚未下載'}',
-                              ),
-                              if (r.warning != null)
-                                Text(
-                                  r.warning!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                              TextButton.icon(
-                                onPressed: busy ? null : refresh,
-                                icon: const Icon(Icons.refresh),
-                                label: Text(busy ? '正在更新…' : '更新公開資料'),
-                              ),
-                              TextButton.icon(
-                                onPressed: locating ? null : nearby,
-                                icon: const Icon(Icons.my_location),
-                                label: Text(locating ? '正在取得位置…' : '依目前位置排序'),
-                              ),
-                              if (position != null) ...[
-                                const Text(
-                                  '依單次位置的直線距離排序；不是步行距離或無障礙路線。缺少有效座標的地點列於最後。',
-                                ),
-                                TextButton(
-                                  onPressed: () => setState(() {
-                                    position = null;
-                                    locationMessage = null;
-                                  }),
-                                  child: const Text('停止使用位置'),
-                                ),
-                              ],
-                              if (locationMessage != null)
-                                Text(locationMessage!),
-                              TextField(
-                                decoration: const InputDecoration(
-                                  labelText: '搜尋名稱、地址或行政區',
-                                  prefixIcon: Icon(Icons.search),
-                                ),
-                                onChanged: (v) => setState(() {
-                                  query = v;
-                                }),
-                              ),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<String>(
-                                initialValue: district,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: '行政區',
-                                ),
-                                items:
-                                    [
-                                          '',
-                                          ...({
-                                            ...r.facilities.map(
-                                              (f) => f.district,
-                                            ),
-                                          }.toList()..sort()),
-                                        ]
-                                        .map(
-                                          (d) => DropdownMenuItem(
-                                            value: d,
-                                            child: Text(
-                                              d.isEmpty ? '全部行政區' : d,
-                                            ),
+      child: Scaffold(
+        appBar: AppBar(
+          leading: Navigator.of(context).canPop()
+              ? IconButton(
+                  tooltip: '返回',
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              : null,
+          title: const Text('台北安心行'),
+        ),
+        body: r == null
+            ? Center(
+                child: error == null
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!MediaQuery.disableAnimationsOf(context))
+                            const CircularProgressIndicator(
+                              semanticsLabel: '正在載入公開資料',
+                            ),
+                          const SizedBox(height: 16),
+                          const Text('正在載入公開資料…'),
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(error!),
+                          TextButton(onPressed: load, child: const Text('重試')),
+                        ],
+                      ),
+              )
+            : Column(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 840),
+                        child: CustomScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '找一處安心停留的地方',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                        )
-                                        .toList(),
-                                onChanged: (v) => setState(() {
-                                  district = v ?? '';
-                                }),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text('賽前準備原型・公共廁所需求查詢'),
+                                    const Text('公開資料非即時；未知不等於沒有，設施不等於可通行路線。'),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      r.stale
+                                          ? '資料非即時・超過30日，出發前請確認'
+                                          : '資料非即時・出發前請確認',
+                                      style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () => setState(
+                                        () => showSource = !showSource,
+                                      ),
+                                      icon: Icon(
+                                        showSource
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
+                                      ),
+                                      label: const Text('資料來源與更新時間'),
+                                    ),
+                                    if (showSource)
+                                      Text(
+                                        '${r.origin}・${r.facilities.length} 個地點\n來源更新基準：2026-08-24${r.stale ? '・超過30日，請確認' : ''}\n最近成功下載：${r.checkedAt?.toLocal().toString().split('.').first ?? '尚未下載'}',
+                                      ),
+                                    if (r.warning != null)
+                                      Text(
+                                        r.warning!,
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .error,
+                                        ),
+                                      ),
+                                    TextButton.icon(
+                                      onPressed: busy ? null : refresh,
+                                      icon: const Icon(Icons.refresh),
+                                      label: Text(busy ? '正在更新…' : '更新公開資料'),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: locating ? null : nearby,
+                                      icon: const Icon(Icons.my_location),
+                                      label: Text(
+                                        locating ? '正在取得位置…' : '依目前位置排序',
+                                      ),
+                                    ),
+                                    if (position != null) ...[
+                                      const Text(
+                                        '依單次位置的直線距離排序；不是步行距離或無障礙路線。缺少有效座標的地點列於最後。',
+                                      ),
+                                      TextButton(
+                                        onPressed: () => setState(() {
+                                          position = null;
+                                          locationMessage = null;
+                                        }),
+                                        child: const Text('停止使用位置'),
+                                      ),
+                                    ],
+                                    if (locationMessage != null)
+                                      Semantics(
+                                        liveRegion: true,
+                                        child: Text(locationMessage!),
+                                      ),
+                                    TextField(
+                                      controller: searchController,
+                                      textInputAction: TextInputAction.search,
+                                      onSubmitted: (_) =>
+                                          FocusScope.of(context).unfocus(),
+                                      decoration: InputDecoration(
+                                        labelText: '搜尋名稱、地址或行政區',
+                                        prefixIcon: const Icon(Icons.search),
+                                        suffixIcon: query.isEmpty
+                                            ? null
+                                            : IconButton(
+                                                tooltip: '清除搜尋',
+                                                icon: const Icon(Icons.close),
+                                                onPressed: () {
+                                                  searchController.clear();
+                                                  FocusScope.of(context)
+                                                      .unfocus();
+                                                  setState(() => query = '');
+                                                },
+                                              ),
+                                      ),
+                                      onChanged: (v) => setState(() {
+                                        query = v;
+                                      }),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    DropdownButtonFormField<String>(
+                                      key: ValueKey(district),
+                                      initialValue: district,
+                                      isExpanded: true,
+                                      decoration: const InputDecoration(
+                                        labelText: '行政區',
+                                      ),
+                                      items:
+                                          [
+                                                '',
+                                                ...({
+                                                  ...r.facilities.map(
+                                                    (f) => f.district,
+                                                  ),
+                                                }.toList()..sort()),
+                                              ]
+                                              .map(
+                                                (d) => DropdownMenuItem(
+                                                  value: d,
+                                                  child: Text(
+                                                    d.isEmpty ? '全部行政區' : d,
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
+                                      onChanged: (v) => setState(() {
+                                        district = v ?? '';
+                                      }),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        FilterChip(
+                                          label: const Text('無障礙廁所'),
+                                          selected: accessible,
+                                          onSelected: (v) => setState(() {
+                                            accessible = v;
+                                          }),
+                                        ),
+                                        FilterChip(
+                                          label: const Text('親子廁所'),
+                                          selected: family,
+                                          onSelected: (v) => setState(() {
+                                            family = v;
+                                          }),
+                                        ),
+                                        FilterChip(
+                                          label: const Text('照護床有登載'),
+                                          selected: care,
+                                          onSelected: (v) => setState(() {
+                                            care = v;
+                                          }),
+                                        ),
+                                        FilterChip(
+                                          label: const Text('只看收藏'),
+                                          selected: savedOnly,
+                                          onSelected: (v) => setState(() {
+                                            savedOnly = v;
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                    const Text('多項需求採同時符合；缺漏或未知不列入需求篩選。'),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  FilterChip(
-                                    label: const Text('無障礙廁所'),
-                                    selected: accessible,
-                                    onSelected: (v) => setState(() {
-                                      accessible = v;
-                                    }),
-                                  ),
-                                  FilterChip(
-                                    label: const Text('親子廁所'),
-                                    selected: family,
-                                    onSelected: (v) => setState(() {
-                                      family = v;
-                                    }),
-                                  ),
-                                  FilterChip(
-                                    label: const Text('照護床有登載'),
-                                    selected: care,
-                                    onSelected: (v) => setState(() {
-                                      care = v;
-                                    }),
-                                  ),
-                                  FilterChip(
-                                    label: const Text('只看收藏'),
-                                    selected: savedOnly,
-                                    onSelected: (v) => setState(() {
-                                      savedOnly = v;
-                                    }),
-                                  ),
-                                ],
-                              ),
-                              const Text('多項需求採同時符合；缺漏或未知不列入需求篩選。'),
-                            ],
-                          ),
+                            ),
+                            ...results(r),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: 24),
+                            ),
+                          ],
                         ),
                       ),
-                      ...results(r),
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -454,28 +585,71 @@ class _CompanionPageState extends State<CompanionPage> {
         return comparison == 0 ? order[a]!.compareTo(order[b]!) : comparison;
       });
     }
+    final matchIndices = {
+      for (var i = 0; i < matches.length; i++) matches[i].id: i,
+    };
     return [
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('符合 ${matches.length} 個地點'),
+          child: Semantics(
+            liveRegion: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                '符合 ${matches.length} 個地點',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ),
         ),
       ),
       if (matches.isEmpty)
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('沒有符合的地點，請調整條件；未知設施未納入篩選。'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.search_off, size: 32),
+                const SizedBox(height: 12),
+                const Text('沒有符合的地點，請調整條件；未知設施未納入篩選。'),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    searchController.clear();
+                    FocusScope.of(context).unfocus();
+                    setState(() {
+                      query = '';
+                      district = '';
+                      accessible = family = care = savedOnly = false;
+                    });
+                  },
+                  icon: const Icon(Icons.restart_alt),
+                  label: const Text('清除全部條件'),
+                ),
+              ],
+            ),
           ),
         ),
       SliverList.builder(
         itemCount: matches.length,
+        findChildIndexCallback: (key) =>
+            key is ValueKey<String> ? matchIndices[key.value] : null,
         itemBuilder: (context, i) {
           final f = matches[i];
           return Card(
+            key: ValueKey(f.id),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: ListTile(
-              title: Text(f.name),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              title: Text(
+                f.name,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               subtitle: Text(
                 '${f.district}・${f.address}\n無障礙：${f.accessibleSeats ?? '未知'}座・親子：${f.familySeats ?? '未知'}座\n${distanceLabel(f)}',
               ),
