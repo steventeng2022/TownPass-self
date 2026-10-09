@@ -1,4 +1,5 @@
 import 'package:town_pass/page/companion/companion_page.dart';
+import 'package:town_pass/page/youbike/youbike_page.dart';
 import 'package:get/get.dart';
 import 'package:town_pass/page/account/account_view.dart';
 import 'package:town_pass/page/account/account_view_controller.dart';
@@ -38,6 +39,7 @@ import 'package:town_pass/util/tp_web_view.dart';
 
 abstract class TPRoute {
   static const String companion = '/taipei-companion';
+  static const String youbike = '/taipei-youbike';
   static const String main = '/';
   static const String account = '/account';
   static const String activityList = '/activity_list';
@@ -64,6 +66,7 @@ abstract class TPRoute {
 
   static final List<GetPage> page = [
     GetPage(name: companion, page: () => const CompanionPage()),
+    GetPage(name: youbike, page: () => const YouBikePage()),
     GetPage(
       name: main,
       page: () => const MainView(),
