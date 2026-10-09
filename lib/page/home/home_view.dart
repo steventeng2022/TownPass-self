@@ -28,6 +28,7 @@ class HomeView extends StatelessWidget {
         slivers: [
           _SliverGap(20),
           SliverToBoxAdapter(child: _CompanionEntry()),
+          SliverToBoxAdapter(child: _YouBikeEntry()),
           SliverToBoxAdapter(child: NewsBannerWidget()),
           _SliverGap(20),
           SliverToBoxAdapter(child: ActivityInfoWidget()),
@@ -53,6 +54,21 @@ class _CompanionEntry extends StatelessWidget {
       subtitle: const Text('公共廁所・無障礙與親子需求查詢'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Get.toNamed(TPRoute.companion),
+    ),
+  );
+}
+
+class _YouBikeEntry extends StatelessWidget {
+  const _YouBikeEntry();
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+    child: ListTile(
+      leading: const Icon(Icons.pedal_bike),
+      title: const Text('台北 YouBike 找車位'),
+      subtitle: const Text('查詢可借車輛、可還空位與收藏場站'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Get.toNamed(TPRoute.youbike),
     ),
   );
 }
