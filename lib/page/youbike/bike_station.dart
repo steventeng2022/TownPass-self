@@ -12,10 +12,13 @@ class BikeStation {
     required this.capacity,
     required this.active,
     required this.updated,
+    this.latitude,
+    this.longitude,
   });
   final String id, name, district, address, updated;
   final int? rent, returnSlots, capacity;
   final bool active;
+  final double? latitude, longitude;
   factory BikeStation.fromJson(Map<String, dynamic> row) {
     int? number(dynamic value) {
       final n = value is int ? value : int.tryParse('$value');
@@ -36,6 +39,8 @@ class BikeStation {
       capacity: number(row['Quantity'] ?? row['quantity']),
       active: (row['act'] ?? '').toString() == '1',
       updated: (row['mday'] ?? row['infoTime'] ?? '').toString().trim(),
+      latitude: double.tryParse('${row['latitude']}'),
+      longitude: double.tryParse('${row['longitude']}'),
     );
   }
 }

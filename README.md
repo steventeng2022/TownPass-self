@@ -4,6 +4,8 @@
 
 另新增獨立的「**台北 YouBike 找車位**」首頁入口，與公廁服務並列，提供站點搜尋、行政區與有車／有空位交集篩選、本機收藏及手動更新。功能、資料來源與授權見 [YouBike 功能文件](docs/taipei-youbike.md)。雙服務網頁展示：`flutter run -t lib/daily_services_demo.dart -d chrome`。
 
+新增「**設施快找**」整合公廁與 YouBike 搜尋、行政區與需求篩選、共用收藏，以及可選的附近直線距離排序與外部地圖步行路線。完整 App 首頁及上述網頁展示均可進入；操作、模組介面與限制見 [設施快找文件](docs/facility-finder.md)。
+
 目前定位為**賽前準備原型**，準備參與的活動頁面為 [Codefest Taipei 2026 秋季活動](https://codefest.taipei/2026-fall/)；正式參賽內容與資格仍須依主辦公告核對。完整功能、資料歸屬與既有驗證紀錄見 [台北安心行詳細文件](docs/taipei-companion.md)。
 
 > 想先看功能：完成下方「快速開始」，使用 `lib/companion_demo.dart` 啟動網頁展示。

@@ -27,6 +27,7 @@ class HomeView extends StatelessWidget {
       body: const CustomScrollView(
         slivers: [
           _SliverGap(20),
+          SliverToBoxAdapter(child: _FacilityFinderEntry()),
           SliverToBoxAdapter(child: _CompanionEntry()),
           SliverToBoxAdapter(child: _YouBikeEntry()),
           SliverToBoxAdapter(child: NewsBannerWidget()),
@@ -41,6 +42,21 @@ class HomeView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FacilityFinderEntry extends StatelessWidget {
+  const _FacilityFinderEntry();
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+    child: ListTile(
+      leading: const Icon(Icons.travel_explore),
+      title: const Text('設施快找'),
+      subtitle: const Text('一起找公廁與 YouBike・附近排序與步行路線'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Get.toNamed(TPRoute.facilityFinder),
+    ),
+  );
 }
 
 class _CompanionEntry extends StatelessWidget {
