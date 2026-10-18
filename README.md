@@ -2,6 +2,8 @@
 
 新增繁體中文公共廁所需求查詢、真實公開資料快照、收藏與離線提示。另新增獨立的「台北 YouBike 找車位」首頁入口，詳見 [YouBike 功能文件](docs/taipei-youbike.md)。功能與授權、展示步驟、實際建置限制見 [台北安心行文件](docs/taipei-companion.md)。雙服務網頁展示：`flutter run -t lib/daily_services_demo.dart -d chrome`。
 
+最終比賽目標:https://codefest.taipei/2026-fall/
+
 # What is Town Pass?
 
 Town Pass is an open-source project developed by the Taipei City Government. With the growth of smart cities, the demand for digitalization in city management and citizen services continues to rise. As we enter a new digital era, our goal is to involve citizens in the process, combining third-party expertise and innovation to make digital life in Taipei more convenient.
