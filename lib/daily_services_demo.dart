@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import 'page/companion/companion_page.dart';
+import 'page/facility_finder/finder_page.dart';
 import 'page/youbike/youbike_page.dart';
 
 void main() {
@@ -31,6 +32,17 @@ class DailyServicesDemo extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       children: [
         const Text('賽前準備原型・選擇市民常用服務'),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.travel_explore),
+            title: const Text('設施快找'),
+            subtitle: const Text('一起找公廁與 YouBike・附近排序與步行路線'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const FinderPage()),
+            ),
+          ),
+        ),
         Card(
           child: ListTile(
             leading: const Icon(Icons.accessible_forward),

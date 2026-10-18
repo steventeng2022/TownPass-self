@@ -13,6 +13,11 @@ void main() {
       GetMaterialApp(getPages: TPRoute.page, home: const HomeView()),
     );
     expect(find.text('台北安心行'), findsOneWidget);
+    expect(find.text('設施快找'), findsOneWidget);
+    expect(
+      TPRoute.page.where((page) => page.name == TPRoute.facilityFinder),
+      hasLength(1),
+    );
     expect(find.text('台北 YouBike 找車位'), findsOneWidget);
     await tester.pump(const Duration(seconds: 4));
     await tester.pump(const Duration(seconds: 3));
